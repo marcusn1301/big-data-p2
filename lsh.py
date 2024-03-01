@@ -116,6 +116,7 @@ def signature_set(k_shingles):
     docs_sig_sets = []
 
     # implement your code here
+    print("NUTS")
 
     return docs_sig_sets
 
