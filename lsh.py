@@ -11,7 +11,7 @@ from itertools import combinations # for creating candidate pairs in lsh
 
 # Global parameters
 parameter_file = 'default_parameters.ini'  # the main parameters file
-data_main_directory = Path('data')  # the main path were all the data directories are
+data_main_directory = Path('data_test')  # the main path were all the data directories are
 parameters_dictionary = dict()  # dictionary that holds the input parameters, key = parameter name, value = value
 document_list = dict()  # dictionary of the input documents, key = document id, value = the document
 
@@ -91,18 +91,19 @@ def naive():
 # METHOD FOR TASK 1
 # Creates the k-Shingles of each document and returns a list of them
 def k_shingles():
-    docs_k_shingles = []  # holds the k-shingles of each document
 
-    k = parameters_dictionary['k']
-    # iterate through all the documents and create the k-shingles
-    for document in document_list.values():
-        #split each document into a list of words
-        list_of_words = list(set(document.split()))
+    k = 5
 
-        #create k-shingles
-        for i in range(0, len(list_of_words), k):
-            docs_k_shingles.append(list_of_words[i:i+k])
-    print(docs_k_shingles)
+    docs_k_shingles = []  # holds the k-shingles of each document 
+
+    for doc in document_list.values():
+
+        words = doc.split()
+
+        shingles = [' '.join(words[i:i+k]) for i in range(len(words) - k + 1)]
+
+        docs_k_shingles.append(set(shingles)) 
+
     return docs_k_shingles
 
 
@@ -118,12 +119,15 @@ def signature_set(k_shingles):
     # make input matrix
     docs_sig_sets = np.zeros((len(k_shingles), len(document_list)))
     # print(docs_sig_sets)
+    print(k_shingles)
+    
     for shingle in k_shingles:
-        for document in document_list.values():
-            #print(f'Shingle: {shingle}, \nDocument:{document}')
-            if str(shingle) in document:
-                docs_sig_sets[k_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
-
+        for simpleShingle in shingle:
+            for document in document_list.values():
+                #print(f'Shingle: {shingle}, \nDocument:{document}')
+                if str(simpleShingle) in document:  
+                    docs_sig_sets[k_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
+    print("Document signature: ")
     print(docs_sig_sets)
     return docs_sig_sets
 
@@ -143,11 +147,12 @@ def generate_hash_functions(num_perm, N):
 
     return hash_funcs
 
-
+    
 
 # Creates the minHash signatures after generating hash functions
 def minHash(docs_signature_sets, hash_fn):
     min_hash_signatures = []
+    min_hash_signatures = np.array(np.ones((len(hash_fn),np.shape(docs_signature_sets)[0])) * np.inf)
     # implement your code here
     for r in range (np.shape(docs_signature_sets)[0]):
         for c in range(np.shape(docs_signature_sets)[1]):
@@ -158,6 +163,8 @@ def minHash(docs_signature_sets, hash_fn):
                         min_hash_signatures[i][c] = hash_fn[i](r+1)
     print(min_hash_signatures)
     return min_hash_signatures
+
+    
 
 
     """"""""" 
