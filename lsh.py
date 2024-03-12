@@ -11,7 +11,7 @@ from itertools import combinations # for creating candidate pairs in lsh
 
 # Global parameters
 parameter_file = 'default_parameters.ini'  # the main parameters file
-data_main_directory = Path('data_test')  # the main path were all the data directories are
+data_main_directory = Path('data')  # the main path were all the data directories are
 parameters_dictionary = dict()  # dictionary that holds the input parameters, key = parameter name, value = value
 document_list = dict()  # dictionary of the input documents, key = document id, value = the document
 
@@ -93,18 +93,17 @@ def naive():
 def k_shingles():
 
     k = 5
-
-    docs_k_shingles = []  # holds the k-shingles of each document 
+    all_shingles = []
 
     for doc in document_list.values():
-
         words = doc.split()
-
         shingles = [' '.join(words[i:i+k]) for i in range(len(words) - k + 1)]
+        all_shingles.extend(shingles) 
+    
+    all_shingles = list(set(all_shingles)) 
 
-        docs_k_shingles.append(set(shingles)) 
+    return all_shingles
 
-    return docs_k_shingles
 
 
 # METHOD FOR TASK 2
@@ -112,23 +111,17 @@ def k_shingles():
 def signature_set(k_shingles):
     docs_sig_sets = []
 
-    # implement your code here
-    print(f'Number of k-shingles: {len(k_shingles)}')
-        
-
     # make input matrix
     docs_sig_sets = np.zeros((len(k_shingles), len(document_list)))
     # print(docs_sig_sets)
-    print(k_shingles)
+
     
     for shingle in k_shingles:
-        for simpleShingle in shingle:
-            for document in document_list.values():
-                #print(f'Shingle: {shingle}, \nDocument:{document}')
-                if str(simpleShingle) in document:  
-                    docs_sig_sets[k_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
-    print("Document signature: ")
-    print(docs_sig_sets)
+        for document in document_list.values():
+            #print(f'Shingle: {shingle}, \nDocument:{document}')
+            if str(shingle) in document:  
+                docs_sig_sets[k_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
+    
     return docs_sig_sets
 
 
@@ -161,7 +154,7 @@ def minHash(docs_signature_sets, hash_fn):
                     # since the sentences are 0-indexed, we add 1 to get the correct hash value
                     if hash_fn[i](r+1) < min_hash_signatures[i][c]:
                         min_hash_signatures[i][c] = hash_fn[i](r+1)
-    print(min_hash_signatures)
+   
     return min_hash_signatures
 
 
@@ -183,11 +176,29 @@ def minHash(docs_signature_sets, hash_fn):
 # Hashes the MinHash Signature Matrix into buckets and find candidate similar documents
 def lsh(m_matrix):
     candidates = []  # list of candidate sets of documents for checking similarity
+    b = 20
+    buckets = [{} for _ in range(b)] 
+
+    bands = np.array_split(m_matrix, b)
+
     
+    for band_index, band in enumerate(bands):
+        for column_index, column in enumerate(band.T):
+            hash_value = tuple(column) 
+            if hash_value not in buckets[band_index]:
+                buckets[band_index][hash_value] = [column_index]
+            else:
+                buckets[band_index][hash_value].append(column_index)
 
+    # print(f'Buckets: {buckets}')
 
-    # implement your code here
+    for dict in buckets: 
+        for key, value in dict.items():
+            if len(value) > 1:
+                if value not in candidates:
+                    candidates.append(value)
 
+    # print(candidates)
     return candidates
 
 
@@ -218,14 +229,14 @@ if __name__ == '__main__':
     print(len(document_list), "documents were read in", t1 - t0, "sec\n")
 
     # Naive
-    # naive_similarity_matrix = []
-    # if parameters_dictionary['naive']:
-    #     print("Starting to calculate the similarities of documents...")
-    #     t2 = time.time()
-    #     naive_similarity_matrix = naive()
-    #     t3 = time.time()
-    #     print("Calculating the similarities of", len(naive_similarity_matrix),
-    #           "combinations of documents took", t3 - t2, "sec\n")
+    naive_similarity_matrix = []
+    if parameters_dictionary['naive']:
+        print("Starting to calculate the similarities of documents...")
+        t2 = time.time()
+        naive_similarity_matrix = naive()
+        t3 = time.time()
+        print("Calculating the similarities of", len(naive_similarity_matrix),
+              "combinations of documents took", t3 - t2, "sec\n")
 
     # k-Shingles
     print("Starting to create all k-shingles of the documents...")
@@ -249,34 +260,38 @@ if __name__ == '__main__':
     t9 = time.time()
     print("Simulation of MinHash Signature Matrix took", t9 - t8, "sec\n")
 
+    print("LSH")
+    lsh(min_hash_signatures)
+
     # LSH
-    # print("Starting the Locality-Sensitive Hashing...")
-    # t10 = time.time()
-    # candidate_docs = lsh(min_hash_signatures)
-    # t11 = time.time()
-    # print("LSH took", t11 - t10, "sec\n")
+    print("Starting the Locality-Sensitive Hashing...")
+    t10 = time.time()
+    candidate_docs = lsh(min_hash_signatures)
+    t11 = time.time()
+    print("LSH took", t11 - t10, "sec\n")
 
     # Return the over t similar pairs
-    # print("Starting to get the pairs of documents with over ", parameters_dictionary['t'], "% similarity...")
-    # t14 = time.time()
-    # true_pairs = candidates_similarities(candidate_docs, min_hash_signatures)
-    # t15 = time.time()
-    # print(f"The total number of candidate pairs from LSH: {len(candidate_docs)}")
-    # print(f"The total number of true pairs from LSH: {len(true_pairs)}")
-    # print(f"The total number of false positives from LSH: {len(candidate_docs) - len(true_pairs)}")
+    print("Starting to get the pairs of documents with over ", parameters_dictionary['t'], "% similarity...")
+    t14 = time.time()
+    true_pairs = candidates_similarities(candidate_docs, min_hash_signatures)
+    t15 = time.time()
+    print(f"The total number of candidate pairs from LSH: {len(candidate_docs)}")
+    print(f"The total number of true pairs from LSH: {len(true_pairs)}")
+    print(f"The total number of false positives from LSH: {len(candidate_docs) - len(true_pairs)}")
 
-    # if parameters_dictionary['naive']:
-    #     print("Naive similarity calculation took", t3 - t2, "sec")
+    if parameters_dictionary['naive']:
+        print("Naive similarity calculation took", t3 - t2, "sec")
 
-    # print("LSH process took in total", t14 - t15, "sec")
+    print("LSH process took in total", t14 - t15, "sec")
 
     
-    # print("The pairs of documents are:\n")
-    # for p in true_pairs:
-    #     print(f"LSH algorith reveals that the BBC article {list(p.keys())[0][0]+1}.txt and {list(p.keys())[0][1]+1}.txt \
-    #           are {round(list(p.values())[0],2)*100}% similar")
+    print("The pairs of documents are:\n")
+    for p in true_pairs:
+        print(f"LSH algorith reveals that the BBC article {list(p.keys())[0][0]+1}.txt and {list(p.keys())[0][1]+1}.txt \
+              are {round(list(p.values())[0],2)*100}% similar")
         
-    #     print("\n")
+        print("\n")
+
 
     
     
