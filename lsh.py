@@ -164,6 +164,8 @@ def minHash(docs_signature_sets, hash_fn):
     print(min_hash_signatures)
     return min_hash_signatures
 
+
+
     
 
 
@@ -181,6 +183,8 @@ def minHash(docs_signature_sets, hash_fn):
 # Hashes the MinHash Signature Matrix into buckets and find candidate similar documents
 def lsh(m_matrix):
     candidates = []  # list of candidate sets of documents for checking similarity
+    
+
 
     # implement your code here
 
