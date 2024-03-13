@@ -1,6 +1,7 @@
 # This is the code for the LSH project of TDT4305
 
-import configparser  # for reading the parameters file
+import configparser
+from enum import unique  # for reading the parameters file
 import sys  # for system errors and printouts
 from pathlib import Path  # for paths of files
 import os  # for reading the input data
@@ -11,7 +12,7 @@ from itertools import combinations # for creating candidate pairs in lsh
 
 # Global parameters
 parameter_file = 'default_parameters.ini'  # the main parameters file
-data_main_directory = Path('data')  # the main path were all the data directories are
+data_main_directory = Path('data_test')  # the main path were all the data directories are
 parameters_dictionary = dict()  # dictionary that holds the input parameters, key = parameter name, value = value
 document_list = dict()  # dictionary of the input documents, key = document id, value = the document
 
@@ -93,16 +94,18 @@ def naive():
 def k_shingles():
 
     k = 5
-    all_shingles = []
+
+    docs_k_shingles = []  
 
     for doc in document_list.values():
-        words = doc.split()
-        shingles = [' '.join(words[i:i+k]) for i in range(len(words) - k + 1)]
-        all_shingles.extend(shingles) 
-    
-    all_shingles = list(set(all_shingles)) 
 
-    return all_shingles
+        words = doc.split()
+
+        shingles = [' '.join(words[i:i+k]) for i in range(len(words) - k + 1)]
+
+        docs_k_shingles.append(set(shingles)) 
+
+    return docs_k_shingles
 
 
 
@@ -111,16 +114,24 @@ def k_shingles():
 def signature_set(k_shingles):
     docs_sig_sets = []
 
-    # make input matrix
-    docs_sig_sets = np.zeros((len(k_shingles), len(document_list)))
-    # print(docs_sig_sets)
-
+    unique_shingles = set().union(*k_shingles)
+    unique_shingles = list(unique_shingles)
     
-    for shingle in k_shingles:
+
+    # make input matrix
+    docs_sig_sets = np.zeros((len(unique_shingles), len(document_list))) 
+    
+    for shingle in unique_shingles:
         for document in document_list.values():
             #print(f'Shingle: {shingle}, \nDocument:{document}')
             if str(shingle) in document:  
-                docs_sig_sets[k_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
+                docs_sig_sets[unique_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
+
+    print("Document signature: ")
+    print(docs_sig_sets)
+    print("\n")
+    print("Document signature shape: ")
+    print(np.shape(docs_sig_sets)) 
     
     return docs_sig_sets
 
@@ -145,7 +156,9 @@ def generate_hash_functions(num_perm, N):
 # Creates the minHash signatures after generating hash functions
 def minHash(docs_signature_sets, hash_fn):
     min_hash_signatures = []
-    min_hash_signatures = np.array(np.ones((len(hash_fn),np.shape(docs_signature_sets)[0])) * np.inf)
+    min_hash_signatures = np.array(np.ones((len(hash_fn),np.shape(docs_signature_sets)[1])) * np.inf)
+    print("MinHash Signature Shape: ")
+    print(np.shape(min_hash_signatures))
     # implement your code here
     for r in range (np.shape(docs_signature_sets)[0]):
         for c in range(np.shape(docs_signature_sets)[1]):
@@ -154,6 +167,10 @@ def minHash(docs_signature_sets, hash_fn):
                     # since the sentences are 0-indexed, we add 1 to get the correct hash value
                     if hash_fn[i](r+1) < min_hash_signatures[i][c]:
                         min_hash_signatures[i][c] = hash_fn[i](r+1)
+
+
+    print("MinHash Signature: ")
+    print(min_hash_signatures)
    
     return min_hash_signatures
 
@@ -183,6 +200,7 @@ def lsh(m_matrix):
 
     
     for band_index, band in enumerate(bands):
+        #transpose bands to get the columns
         for column_index, column in enumerate(band.T):
             hash_value = tuple(column) 
             if hash_value not in buckets[band_index]:
@@ -190,7 +208,8 @@ def lsh(m_matrix):
             else:
                 buckets[band_index][hash_value].append(column_index)
 
-    # print(f'Buckets: {buckets}')
+    print(buckets)
+
 
     for dict in buckets: 
         for key, value in dict.items():
@@ -198,7 +217,7 @@ def lsh(m_matrix):
                 if value not in candidates:
                     candidates.append(value)
 
-    # print(candidates)
+    #print(f'buckets' , buckets)
     return candidates
 
 
