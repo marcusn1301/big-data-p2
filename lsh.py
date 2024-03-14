@@ -198,7 +198,7 @@ def lsh(m_matrix):
 
     bands = np.array_split(m_matrix, b)
 
-    
+
     for band_index, band in enumerate(bands):
         #transpose bands to get the columns
         for column_index, column in enumerate(band.T):
@@ -207,29 +207,68 @@ def lsh(m_matrix):
                 buckets[band_index][hash_value] = [column_index]
             else:
                 buckets[band_index][hash_value].append(column_index)
+    
+    potential = []
+    print(f'buckets' , buckets)
 
-    print(buckets)
-
-
-    for dict in buckets: 
-        for key, value in dict.items():
+    for band in buckets:
+        print(f'Length of band {len(band)}')
+        for key, value in band.items():
+            print(len(value), value)
             if len(value) > 1:
-                if value not in candidates:
-                    candidates.append(value)
-
+                
+                combinations_list = list(combinations(value, 2))
+                for combination in combinations_list:
+                    potential.append(combination)
+    potential = set(potential)
+    
     #print(f'buckets' , buckets)
+    candidates = potential
+    print("CANDDDD",candidates)
     return candidates
 
 
 # METHOD FOR TASK 5
 # Calculates the similarities of the candidate documents
 def candidates_similarities(candidate_docs, min_hash_matrix):
-    similarity_dict = []
+    threshold = parameters_dictionary['t']
+    print("Threshold: ", threshold)
+    similarity_dict = {}
+
+    for pair in candidate_docs:
+        print("Pair: ", pair)
+        doc1 = min_hash_matrix[:, pair[0]]
+        doc2 = min_hash_matrix[:, pair[1]]
+        numberOfHits = 0
+        print("DOC1",doc1)
+        print("DOC2",doc2)
+
+        # for i in range(len(doc1)):
+        #     if doc1[i] == doc2[i]:
+        #         numberOfHits += 1
+        numberOfHits = np.sum(doc1 == doc2)
+        numberOfHits = numberOfHits / len(doc1)
+
+        if numberOfHits > threshold:
+            similarity_dict[list(pair)] = numberOfHits
+
+    
+        
+        
+
+        print(f'Similarity dict: {similarity_dict}')
+            
+    
+    # check each pair of documents in candiate_docs. for each row in min hash. 
+    #sum the number of rows that has the same hash and divide by the number of rows.
+    # if the sum is greater than the threshold.
+    # add the pair to the similarity_dict.
+    
+    
 
     # implement your code here
 
     return similarity_dict
-
 
 
 # DO NOT CHANGE THIS METHOD
