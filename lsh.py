@@ -12,7 +12,7 @@ from itertools import combinations # for creating candidate pairs in lsh
 
 # Global parameters
 parameter_file = 'default_parameters.ini'  # the main parameters file
-data_main_directory = Path('data_test')  # the main path were all the data directories are
+data_main_directory = Path('data')  # the main path were all the data directories are
 parameters_dictionary = dict()  # dictionary that holds the input parameters, key = parameter name, value = value
 document_list = dict()  # dictionary of the input documents, key = document id, value = the document
 
@@ -127,11 +127,11 @@ def signature_set(k_shingles):
             if str(shingle) in document:  
                 docs_sig_sets[unique_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
 
-    print("Document signature: ")
-    print(docs_sig_sets)
-    print("\n")
-    print("Document signature shape: ")
-    print(np.shape(docs_sig_sets)) 
+    #print("Document signature: ")
+    #print(docs_sig_sets)
+    #print("\n")
+    #print("Document signature shape: ")
+    #print(np.shape(docs_sig_sets)) 
     
     return docs_sig_sets
 
@@ -158,7 +158,7 @@ def minHash(docs_signature_sets, hash_fn):
     min_hash_signatures = []
     min_hash_signatures = np.array(np.ones((len(hash_fn),np.shape(docs_signature_sets)[1])) * np.inf)
     print("MinHash Signature Shape: ")
-    print(np.shape(min_hash_signatures))
+    #print(np.shape(min_hash_signatures))
     # implement your code here
     for r in range (np.shape(docs_signature_sets)[0]):
         for c in range(np.shape(docs_signature_sets)[1]):
@@ -170,7 +170,7 @@ def minHash(docs_signature_sets, hash_fn):
 
 
     print("MinHash Signature: ")
-    print(min_hash_signatures)
+    #print(min_hash_signatures)
    
     return min_hash_signatures
 
@@ -209,10 +209,10 @@ def lsh(m_matrix):
                 buckets[band_index][hash_value].append(column_index)
     
     potential = []
-    print(f'buckets' , buckets)
+    #print(f'buckets' , buckets)
 
     for band in buckets:
-        print(f'Length of band {len(band)}')
+        #print(f'Length of band {len(band)}')
         for key, value in band.items():
             print(len(value), value)
             if len(value) > 1:
@@ -224,7 +224,7 @@ def lsh(m_matrix):
     
     #print(f'buckets' , buckets)
     candidates = potential
-    print("CANDDDD",candidates)
+    #print("CANDDDD",candidates)
     return candidates
 
 
@@ -232,16 +232,16 @@ def lsh(m_matrix):
 # Calculates the similarities of the candidate documents
 def candidates_similarities(candidate_docs, min_hash_matrix):
     threshold = parameters_dictionary['t']
-    print("Threshold: ", threshold)
-    similarity_dict = {}
+    #print("Threshold: ", threshold)
+    similarity_dict = []
 
     for pair in candidate_docs:
-        print("Pair: ", pair)
+        #print("Pair: ", pair)
         doc1 = min_hash_matrix[:, pair[0]]
         doc2 = min_hash_matrix[:, pair[1]]
         numberOfHits = 0
-        print("DOC1",doc1)
-        print("DOC2",doc2)
+        #print("DOC1",doc1)
+        #print("DOC2",doc2)
 
         # for i in range(len(doc1)):
         #     if doc1[i] == doc2[i]:
@@ -250,7 +250,8 @@ def candidates_similarities(candidate_docs, min_hash_matrix):
         numberOfHits = numberOfHits / len(doc1)
 
         if numberOfHits > threshold:
-            similarity_dict[list(pair)] = numberOfHits
+            localDict = {(pair[0], pair[1]): numberOfHits}
+            similarity_dict.append(localDict)
 
     
         
@@ -344,6 +345,7 @@ if __name__ == '__main__':
 
     
     print("The pairs of documents are:\n")
+    
     for p in true_pairs:
         print(f"LSH algorith reveals that the BBC article {list(p.keys())[0][0]+1}.txt and {list(p.keys())[0][1]+1}.txt \
               are {round(list(p.values())[0],2)*100}% similar")
