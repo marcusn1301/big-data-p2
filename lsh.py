@@ -115,17 +115,20 @@ def signature_set(k_shingles):
     docs_sig_sets = []
 
     unique_shingles = set().union(*k_shingles)
-    unique_shingles = list(unique_shingles)
+    shingleIndexMap = {shingle : index for index , shingle in enumerate(unique_shingles)}
+    print(len(unique_shingles))
     
-
+    document_set = {key: set(value) for key, value in document_list.items()}
     # make input matrix
     docs_sig_sets = np.zeros((len(unique_shingles), len(document_list))) 
+    print(document_list.keys())
     
     for shingle in unique_shingles:
-        for document in document_list.values():
+        shingleIndex = shingleIndexMap[shingle]
+        for key,value  in document_set.items():
             #print(f'Shingle: {shingle}, \nDocument:{document}')
-            if str(shingle) in document:  
-                docs_sig_sets[unique_shingles.index(shingle)][list(document_list.values()).index(document)] = 1
+            if str(shingle) in value:  
+                docs_sig_sets[shingleIndex][key-1] = 1
 
     #print("Document signature: ")
     #print(docs_sig_sets)
@@ -214,7 +217,7 @@ def lsh(m_matrix):
     for band in buckets:
         #print(f'Length of band {len(band)}')
         for key, value in band.items():
-            print(len(value), value)
+           
             if len(value) > 1:
                 
                 combinations_list = list(combinations(value, 2))
@@ -253,12 +256,7 @@ def candidates_similarities(candidate_docs, min_hash_matrix):
             localDict = {(pair[0], pair[1]): numberOfHits}
             similarity_dict.append(localDict)
 
-    
-        
-        
-
-        print(f'Similarity dict: {similarity_dict}')
-            
+           
     
     # check each pair of documents in candiate_docs. for each row in min hash. 
     #sum the number of rows that has the same hash and divide by the number of rows.
