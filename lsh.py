@@ -10,9 +10,10 @@ import numpy as np # for creating matrices or arrays
 import random # for randomly generating a and b for hash functions
 from itertools import combinations # for creating candidate pairs in lsh
 
+
 # Global parameters
 parameter_file = 'default_parameters.ini'  # the main parameters file
-data_main_directory = Path('data')  # the main path were all the data directories are
+data_main_directory = Path('data_test')  # the main path were all the data directories are
 parameters_dictionary = dict()  # dictionary that holds the input parameters, key = parameter name, value = value
 document_list = dict()  # dictionary of the input documents, key = document id, value = the document
 
@@ -118,23 +119,25 @@ def signature_set(k_shingles):
     shingleIndexMap = {shingle : index for index , shingle in enumerate(unique_shingles)}
     print(len(unique_shingles))
     
-    document_set = {key: set(value) for key, value in document_list.items()}
+    document_set = {value : key for key, value in enumerate(document_list.values())}
     # make input matrix
     docs_sig_sets = np.zeros((len(unique_shingles), len(document_list))) 
-    print(document_list.keys())
+    #print(document_list.keys())
+    
     
     for shingle in unique_shingles:
         shingleIndex = shingleIndexMap[shingle]
-        for key,value  in document_set.items():
+        for value  in document_list.values():
+            docIndex = document_set[value]
             #print(f'Shingle: {shingle}, \nDocument:{document}')
             if str(shingle) in value:  
-                docs_sig_sets[shingleIndex][key-1] = 1
+                docs_sig_sets[shingleIndex][docIndex] = 1
 
     #print("Document signature: ")
-    #print(docs_sig_sets)
+    print(docs_sig_sets)
     #print("\n")
-    #print("Document signature shape: ")
-    #print(np.shape(docs_sig_sets)) 
+    print("Document signature shape: ")
+    print(np.shape(docs_sig_sets)) 
     
     return docs_sig_sets
 
@@ -145,12 +148,26 @@ def signature_set(k_shingles):
 def generate_hash_functions(num_perm, N):
     hash_funcs = []
     
-    # implement your code here
-    lambda a, b, x: (a*x + b) % N
     for _ in range(num_perm):
+        # Generate random coefficients a and b
         a = random.randint(1, 2**N)
-        b = random.randint(1, 2**N)
-        hash_funcs.append(lambda x: (a*x + b) % N + 1)
+        b = random.randint(0, 2**N)
+        
+        
+        # Generate a prime number p
+
+        p = 985
+
+        
+        # Define the hash function as a lambda function
+        hash_function = lambda x, a=a, b=b: (a * x + b) % p
+        
+        # Append the hash function to the list
+        hash_funcs.append(hash_function)  
+
+
+
+
 
     return hash_funcs
 
@@ -160,20 +177,20 @@ def generate_hash_functions(num_perm, N):
 def minHash(docs_signature_sets, hash_fn):
     min_hash_signatures = []
     min_hash_signatures = np.array(np.ones((len(hash_fn),np.shape(docs_signature_sets)[1])) * np.inf)
-    print("MinHash Signature Shape: ")
-    #print(np.shape(min_hash_signatures))
+   
     # implement your code here
+
+    
     for r in range (np.shape(docs_signature_sets)[0]):
         for c in range(np.shape(docs_signature_sets)[1]):
-            if docs_signature_sets[r][c] == 1:
+            if docs_signature_sets[r][c] == 1.0:
                 for i in range(len(hash_fn)):
                     # since the sentences are 0-indexed, we add 1 to get the correct hash value
                     if hash_fn[i](r+1) < min_hash_signatures[i][c]:
                         min_hash_signatures[i][c] = hash_fn[i](r+1)
 
 
-    print("MinHash Signature: ")
-    #print(min_hash_signatures)
+    
    
     return min_hash_signatures
 
